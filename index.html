@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#222222"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="가나마스터"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>가나마스터 - 일본어 첫걸음</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f7fa;color:#222;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif}
+.app{max-width:760px;margin:auto;padding:15px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}h1{font-size:22px;margin:0}.muted{font-size:12px;color:#777}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tab{flex:1;border:0;border-radius:12px;padding:11px;background:#e8e8ef;font-weight:700}.tab.on{background:#222;color:#fff}
+.card{background:#fff;border-radius:20px;padding:19px;margin-bottom:12px;box-shadow:0 3px 16px #0000000a}.pill{background:#eeeef4;border-radius:20px;padding:7px 10px;font-size:12px}
+.kana{font-size:76px;text-align:center;margin:8px}.roma{text-align:center;font-size:19px;color:#555}.center{text-align:center}.progress{height:8px;background:#e8e8ee;border-radius:8px;overflow:hidden;margin:8px 0 17px}.bar{height:100%;background:#222;width:0;transition:.2s}
+.word{border-top:1px solid #eee;padding:12px 0;position:relative}.word:first-child{border-top:0}.jp{font-size:24px}.ko{color:#666;font-size:14px;margin-top:2px}.sound{position:absolute;right:0;top:12px;border:0;background:#f0f0f4;border-radius:9px;padding:7px}
+button{font:inherit;cursor:pointer}.primary{width:100%;border:0;background:#222;color:#fff;padding:14px;border-radius:13px;font-weight:700}.secondary{border:0;background:#eee;padding:11px;border-radius:11px}.row{display:flex;gap:7px}.row>*{flex:1}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.cell{border:1px solid #ddd;background:#fff;border-radius:10px;padding:11px 2px;font-size:18px}.cell.active{background:#222;color:#fff}
+.q{font-size:25px;text-align:center;margin:18px 0}.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}.choice{padding:14px;border:1px solid #ddd;background:#fff;border-radius:12px}.correct{background:#e7f6e9!important;border-color:#59a267!important}.wrong{background:#fde9e9!important;border-color:#c66!important}
+.stat{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}.big{font-size:38px;font-weight:800}.section{font-weight:800;margin-bottom:10px}.hidden{display:none}.notice{background:#f1f1f6;border-radius:12px;padding:11px;font-size:13px;line-height:1.55}
+@media(max-width:480px){.grid{grid-template-columns:repeat(5,1fr)}.cell{font-size:16px}}
+</style>
+</head>
+<body><div class="app">
+<div class="top"><div><h1>🇯🇵 가나마스터</h1><div class="muted">히라가나·가타카나를 읽을 수 있게!</div></div><span class="pill" id="today">오늘 0문제</span></div>
+<div class="tabs">
+<button class="tab on" id="learnT" onclick="show('learn')">배우기</button><button class="tab" id="quizT" onclick="show('quiz')">퀴즈</button><button class="tab" id="reviewT" onclick="show('review')">복습</button>
+</div>
+
+<section id="learn">
+<div class="card">
+<div class="row"><button class="secondary" onclick="prev()">← 이전</button><div class="center" id="title"></div><button class="secondary" onclick="next()">다음 →</button></div>
+<div class="progress"><div class="bar" id="lbar"></div></div>
+<div class="kana" id="kana"></div><div class="roma" id="roma"></div><div id="words"></div>
+<button class="primary" style="margin-top:12px" onclick="learned()">✓ 익혔어요</button>
+</div>
+<div class="card"><div class="section">기본음</div><div class="grid" id="basicGrid"></div></div>
+<div class="card"><div class="section">탁음 · 반탁음 · 요음</div><div class="grid" id="specialGrid"></div></div>
+</section>
+
+<section id="quiz" class="hidden"><div class="card">
+<div class="muted" id="qcount"></div><div class="progress"><div class="bar" id="qbar"></div></div><div class="q" id="question"></div><div class="choices" id="choices"></div><div class="center" id="feedback" style="margin-top:12px"></div>
+<div class="row" style="margin-top:12px"><button class="secondary" onclick="listen()">🔊 듣기</button><button class="secondary" onclick="newQuiz()">↻ 다시</button></div>
+</div></section>
+
+<section id="review" class="hidden">
+<div class="card"><div class="section">📅 오늘의 복습</div><div class="notice" id="due"></div></div>
+<div class="card"><div class="section">⚠️ 취약 글자</div><div id="weak"></div></div>
+<div class="card"><div class="section">📊 진도</div><div class="stat"><span>히라가나 기본음</span><b id="hs"></b></div><div class="stat"><span>가타카나 기본음</span><b id="ks"></b></div><div class="stat"><span>오늘 퀴즈</span><b id="ts"></b></div></div>
+<div class="card"><button class="primary" onclick="weakQuiz()">취약 글자 집중 복습</button></div>
+</section>
+</div>
+<script>
+const H=[
+["あ","a","아","あさ|asa|아침","あめ|ame|비"],["い","i","이","いぬ|inu|개","いえ|ie|집"],["う","u","우","うみ|umi|바다","うし|ushi|소"],["え","e","에","えき|eki|역","えんぴつ|enpitsu|연필"],["お","o","오","おちゃ|ocha|차","おと|oto|소리"],
+["か","ka","카","かお|kao|얼굴","かさ|kasa|우산"],["き","ki","키","き|ki|나무","きた|kita|북쪽"],["く","ku","쿠","くるま|kuruma|자동차","くつ|kutsu|신발"],["け","ke","케","けさ|kesa|오늘 아침","けいさつ|keisatsu|경찰"],["こ","ko","코","こえ|koe|목소리","ここ|koko|여기"],
+["さ","sa","사","さかな|sakana|물고기","さくら|sakura|벚꽃"],["し","shi","시","しお|shio|소금","しろ|shiro|흰색"],["す","su","스","すし|sushi|초밥","すいか|suika|수박"],["せ","se","세","せんせい|sensei|선생님","せかい|sekai|세계"],["そ","so","소","そら|sora|하늘","そこ|soko|그곳"],
+["た","ta","타","たまご|tamago|달걀","たべもの|tabemono|음식"],["ち","chi","치","ちず|chizu|지도","ちかい|chikai|가깝다"],["つ","tsu","츠","つき|tsuki|달","つくえ|tsukue|책상"],["て","te","테","て|te|손","てがみ|tegami|편지"],["と","to","토","とけい|tokei|시계","とり|tori|새"],
+["な","na","나","なつ|natsu|여름","なまえ|namae|이름"],["に","ni","니","にく|niku|고기","にほん|nihon|일본"],["ぬ","nu","누","ぬの|nuno|천","ぬま|numa|늪"],["ね","ne","네","ねこ|neko|고양이","ねだん|nedan|가격"],["の","no","노","のみもの|nomimono|음료","のりもの|norimono|탈것"],
+["は","ha","하","はな|hana|꽃","はる|haru|봄"],["ひ","hi","히","ひこうき|hikouki|비행기","ひる|hiru|낮"],["ふ","fu","후","ふゆ|fuyu|겨울","ふね|fune|배"],["へ","he","헤","へや|heya|방","へいわ|heiwa|평화"],["ほ","ho","호","ほし|hoshi|별","ほん|hon|책"],
+["ま","ma","마","まど|mado|창문","まち|machi|마을"],["み","mi","미","みず|mizu|물","みみ|mimi|귀"],["む","mu","무","むし|mushi|벌레","むすこ|musuko|아들"],["め","me","메","め|me|눈","めがね|megane|안경"],["も","mo","모","もり|mori|숲","もの|mono|물건"],
+["や","ya","야","やま|yama|산","やさい|yasai|채소"],["ゆ","yu","유","ゆき|yuki|눈(雪)","ゆめ|yume|꿈"],["よ","yo","요","よる|yoru|밤","よこ|yoko|옆"],
+["ら","ra","라","らく|raku|편함","らいげつ|raigetsu|다음 달"],["り","ri","리","りんご|ringo|사과","りゆう|riyuu|이유"],["る","ru","루","るす|rusu|부재","るい|rui|종류"],["れ","re","레","れいぞうこ|reizouko|냉장고","れきし|rekishi|역사"],["ろ","ro","로","ろうか|rouka|복도","ろく|roku|6"],
+["わ","wa","와","わたし|watashi|나","わに|wani|악어"],["を","wo","오","を|wo|~을/를","ごはんを たべる|gohan o taberu|밥을 먹다"],["ん","n","ㄴ","ほん|hon|책","にほん|nihon|일본"]];
+const K=[
+["ア","a","아","アイス|aisu|아이스크림","アニメ|anime|애니메이션"],["イ","i","이","イカ|ika|오징어","イベント|ibento|이벤트"],["ウ","u","우","ウール|uuru|울","ウイルス|uirusu|바이러스"],["エ","e","에","エアコン|eakon|에어컨","エレベーター|erebeetaa|엘리베이터"],["オ","o","오","オレンジ|orenji|오렌지","オイル|oiru|오일"],
+["カ","ka","카","カメラ|kamera|카메라","カード|kaado|카드"],["キ","ki","키","キッチン|kicchin|주방","キロ|kiro|킬로"],["ク","ku","쿠","クラス|kurasu|반/수업","クッキー|kukkii|쿠키"],["ケ","ke","케","ケーキ|keeki|케이크","ケース|keesu|케이스"],["コ","ko","코","コーヒー|koohii|커피","コート|kooto|코트"],
+["サ","sa","사","サラダ|sarada|샐러드","サイズ|saizu|사이즈"],["シ","shi","시","シャツ|shatsu|셔츠","シール|shiiru|스티커"],["ス","su","스","スープ|suupu|수프","スキー|sukii|스키"],["セ","se","세","セーター|seetaa|스웨터","セット|setto|세트"],["ソ","so","소","ソファ|sofa|소파","ソース|soosu|소스"],
+["タ","ta","타","タクシー|takushii|택시","タオル|taoru|수건"],["チ","chi","치","チーズ|chiizu|치즈","チケット|chiketto|티켓"],["ツ","tsu","츠","ツアー|tsuaa|투어","ツナ|tsuna|참치"],["テ","te","테","テレビ|terebi|텔레비전","テーブル|teeburu|테이블"],["ト","to","토","トマト|tomato|토마토","トイレ|toire|화장실"],
+["ナ","na","나","ナイフ|naifu|나이프","ナッツ|nattsu|견과류"],["ニ","ni","니","ニュース|nyuusu|뉴스","ニット|nitto|니트"],["ヌ","nu","누","ヌードル|nuudoru|누들","ヌガー|nugaa|누가"],["ネ","ne","네","ネクタイ|nekutai|넥타이","ネット|netto|인터넷"],["ノ","no","노","ノート|nooto|노트","ノートパソコン|nootopasokon|노트북"],
+["ハ","ha","하","ハンバーガー|hanbaagaa|햄버거","ハンカチ|hankachi|손수건"],["ヒ","hi","히","ヒーター|hiitaa|히터","ヒント|hinto|힌트"],["フ","fu","후","フルーツ|furuutsu|과일","フライパン|furaipan|프라이팬"],["ヘ","he","헤","ヘア|hea|헤어","ヘルメット|herumetto|헬멧"],["ホ","ho","호","ホテル|hoteru|호텔","ホット|hotto|핫/뜨거운"],
+["マ","ma","마","マスク|masuku|마스크","ママ|mama|엄마"],["ミ","mi","미","ミルク|miruku|우유","ミニ|mini|미니"],["ム","mu","무","ムード|muudo|분위기","ムービー|muubii|동영상"],["メ","me","메","メニュー|menyuu|메뉴","メロン|meron|멜론"],["モ","mo","모","モノレール|monoreeru|모노레일","モデル|moderu|모델"],
+["ヤ","ya","야","ヤクルト|yakuruto|야쿠르트","ヤング|yangu|젊은"],["ユ","yu","유","ユニフォーム|yunifoomu|유니폼","ユーモア|yuumoa|유머"],["ヨ","yo","요","ヨーグルト|yooguruto|요거트","ヨット|yotto|요트"],
+["ラ","ra","라","ラーメン|raamen|라멘","ライオン|raion|사자"],["リ","ri","리","リモコン|rimokon|리모컨","リボン|ribon|리본"],["ル","ru","루","ルール|ruuru|규칙","ルーム|ruumu|방"],["レ","re","레","レストラン|resutoran|레스토랑","レモン|remon|레몬"],["ロ","ro","로","ロボット|robotto|로봇","ロック|rokku|록/잠금"],
+["ワ","wa","와","ワイン|wain|와인","ワンピース|wanpiisu|원피스"],["ヲ","wo","오","ヲ|wo|현대어에서는 거의 쓰지 않음","ヲタク|otaku|오타쿠(일반적으로 オタク)"],["ン","n","ㄴ","パン|pan|빵","レモン|remon|레몬"]];
+
+const SPECIAL=[
+["が","ga","가","がっこう|gakkou|학교","がくせい|gakusei|학생"],["ぎ","gi","기","ぎんこう|ginkou|은행","ぎゅうにく|gyuuniku|소고기"],["ぐ","gu","구","ぐんたい|guntai|군대","ぐあい|guai|상태"],["げ","ge","게","げんき|genki|건강함","げつようび|getsu youbi|월요일"],["ご","go","고","ごはん|gohan|밥","ごご|gogo|오후"],
+["ざ","za","자","ざっし|zasshi|잡지","ざんねん|zannen|아쉬움"],["じ","ji","지","じかん|jikan|시간","じてんしゃ|jitensha|자전거"],["ず","zu","즈","ずっと|zutto|계속","みず|mizu|물"],["ぜ","ze","제","ぜんぶ|zenbu|전부","ぜんぜん|zenzen|전혀"],["ぞ","zo","조","ぞう|zou|코끼리","ぞくぞく|zokuzoku|계속해서"],
+["だ","da","다","だいがく|daigaku|대학","だれ|dare|누구"],["ぢ","ji","지","はなぢ|hanaji|코피","ちぢむ|chijimu|줄어들다"],["づ","zu","즈","つづく|tsuzuku|계속되다","つづける|tsuzukeru|계속하다"],["で","de","데","でんしゃ|densha|전철","でんわ|denwa|전화"],["ど","do","도","どうぶつ|doubutsu|동물","どこ|doko|어디"],
+["ば","ba","바","ばんごはん|bangohan|저녁밥","ばす|basu|버스"],["び","bi","비","びょういん|byouin|병원","びん|bin|병"],["ぶ","bu","부","ぶた|buta|돼지","ぶどう|budou|포도"],["べ","be","베","べんきょう|benkyou|공부","べんり|benri|편리"],["ぼ","bo","보","ぼうし|boushi|모자","ぼく|boku|나(남성)"],
+["ぱ","pa","파","ぱん|pan|빵","ぱーてぃー|paatii|파티"],["ぴ","pi","피","ぴあの|piano|피아노","ぴんく|pinku|핑크"],["ぷ","pu","푸","ぷーる|puuru|수영장","ぷりん|purin|푸딩"],["ぺ","pe","페","ぺん|pen|펜","ぺこぺこ|pekopeko|배가 매우 고픔"],["ぽ","po","포","ぽけっと|poketto|주머니","ぽすと|posuto|우편함"],
+["きゃ","kya","캬","きゃく|kyaku|손님","きゃべつ|kyabetsu|양배추"],["きゅ","kyu","큐","きゅうり|kyuuri|오이","きゅう|kyuu|9"],["きょ","kyo","쿄","きょう|kyou|오늘","きょうしつ|kyoushitsu|교실"],
+["しゃ","sha","샤","しゃしん|shashin|사진","しゃちょう|shachou|사장"],["しゅ","shu","슈","しゅくだい|shukudai|숙제","しゅみ|shumi|취미"],["しょ","sho","쇼","しょうがっこう|shougakkou|초등학교","しょくどう|shokudou|식당"],
+["ちゃ","cha","차","ちゃわん|chawan|찻잔","ちゃいろ|chairo|갈색"],["ちゅ","chu","추","ちゅうがく|chuugaku|중학교","ちゅうごく|chuugoku|중국"],["ちょ","cho","초","ちょっと|chotto|조금","ちょうど|choudo|딱/정확히"],
+["にゃ","nya","냐","にゃんこ|nyanko|고양이","にゃー|nyaa|야옹"],["にゅ","nyu","뉴","にゅうがく|nyuugaku|입학","にゅうりょく|nyuuryoku|입력"],["にょ","nyo","뇨","にょうぼう|nyoubou|아내","にょきにょき|nyokinyoki|쑥쑥"],
+["ひゃ","hya","햐","ひゃく|hyaku|100","ひゃっかてん|hyakkaten|백화점"],["ひゅ","hyu","휴","ひゅーひゅー|hyuuhyuu|휘이휘이","ひゅうひゅう|hyuuhyuu|쌩쌩"],["ひょ","hyo","효","ひょう|hyou|표"],["みゃ","mya","먀","みゃく|myaku|맥박","みゃくはく|myakuhaku|맥박"],
+["みゅ","myu","뮤","みゅーじっく|myuujikku|뮤직"],["みょ","myo","묘","みょうじ|myouji|성"],["りゃ","rya","랴","りゃく|ryaku|약칭","りゃくご|ryakugo|약어"],["りゅ","ryu","류","りゅう|ryuu|용","りゅうがく|ryuugaku|유학"],["りょ","ryo","료","りょこう|ryokou|여행","りょうり|ryouri|요리"]];
+
+let mode="h",idx=0,quiz=[],qi=0,score=0,current=null,answered=false;
+let prog=JSON.parse(localStorage.getItem("gm_prog")||"{}"), stats=JSON.parse(localStorage.getItem("gm_stats")||"{}"), today=+localStorage.getItem("gm_today")||0;
+function $(x){return document.getElementById(x)}function arr(){return mode==="h"?H:K}
+function speak(s){if(!speechSynthesis)return;speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(s);u.lang="ja-JP";u.rate=.8;speechSynthesis.speak(u)}
+function save(){localStorage.setItem("gm_prog",JSON.stringify(prog));localStorage.setItem("gm_stats",JSON.stringify(stats));localStorage.setItem("gm_today",today);$("today").textContent="오늘 "+today+"문제"}
+function show(s){["learn","quiz","review"].forEach(x=>$(x).classList.toggle("hidden",x!==s));["learnT","quizT","reviewT"].forEach((x,i)=>$(x).classList.toggle("on",["learn","quiz","review"][i]===s));if(s==="learn")render();if(s==="review")review();if(s==="quiz"&&!quiz.length)newQuiz()}
+function render(){
+let a=arr(),x=a[idx];$("title").textContent=(mode==="h"?"히라가나":"가타카나")+" · "+Math.floor(idx/5+1)+"행";$("lbar").style.width=((idx+1)/a.length*100)+"%";$("kana").textContent=x[0];$("roma").textContent=x[1]+" · "+x[2];
+$("words").innerHTML=x.slice(3).map(w=>{let p=w.split("|");return `<div class="word"><button class="sound" onclick="speak('${p[0]}')">🔊</button><div class="jp">${p[0]}</div><div class="ko">${p[2]} · ${p[1]}</div></div>`}).join("");
+$("basicGrid").innerHTML=a.map((x,i)=>`<button class="cell ${i===idx?'active':''}" onclick="jump(${i})">${x[0]}</button>`).join("");
+$("specialGrid").innerHTML=SPECIAL.map((x,i)=>`<button class="cell" onclick="specialLearn(${i})">${x[0]}</button>`).join("");
+}
+function jump(i){idx=i;render()}function next(){if(idx<arr().length-1)idx++;else mode=mode==="h"?"k":"h",idx=0;render()}function prev(){if(idx>0)idx--;render()}
+function learned(){prog[mode+"_"+arr()[idx][0]]=1;save();next()}
+function specialLearn(i){let x=SPECIAL[i];$("title").textContent="특수음";$("kana").textContent=x[0];$("roma").textContent=x[1]+" · "+x[2];$("words").innerHTML=x.slice(3).map(w=>{let p=w.split("|");return `<div class="word"><button class="sound" onclick="speak('${p[0]}')">🔊</button><div class="jp">${p[0]}</div><div class="ko">${p[2]} · ${p[1]}</div></div>`}).join("");window.scrollTo({top:0,behavior:"smooth"})}
+function poolData(){return arr().concat(SPECIAL)}
+function newQuiz(source=arr()){quiz=[];source.forEach(x=>{quiz.push({type:"kana",p:x[2],a:x[0],ref:x});quiz.push({type:"word",p:x[3].split("|")[0],a:x[3].split("|")[2],ref:x,s:x[3].split("|")[0]})});quiz.sort(()=>Math.random()-.5);quiz=quiz.slice(0,20);qi=0;score=0;show("quiz");renderQuiz()}
+function renderQuiz(){
+if(qi>=quiz.length){finish();return}current=quiz[qi];answered=false;$("qcount").textContent=`문제 ${qi+1} / ${quiz.length}`;$("qbar").style.width=(qi/quiz.length*100)+"%";
+$("question").innerHTML=current.type==="kana"?`<span class="muted">이 발음의 글자는?</span><br><b>${current.p}</b>`:`<span class="muted">이 단어의 뜻은?</span><br><b>${current.p}</b>`;
+let source=current.type==="kana"?poolData().map(x=>x[0]):poolData().map(x=>x[3].split("|")[2]),o=[current.a];while(o.length<4){let v=source[Math.floor(Math.random()*source.length)];if(v&&!o.includes(v))o.push(v)}o.sort(()=>Math.random()-.5);$("choices").innerHTML=o.map(v=>`<button class="choice" onclick="answer(this,${JSON.stringify(v)})">${v}</button>`).join("");$("feedback").textContent="";if(current.s)speak(current.s)}
+function answer(btn,v){if(answered)return;answered=true;let id=(SPECIAL.includes(current.ref)?"s_":mode+"_")+current.ref[0],old=stats[id]??50;stats[id]=v===current.a?Math.min(100,old+10):Math.max(0,old-20);today++;save();document.querySelectorAll(".choice").forEach(b=>{if(b.textContent===current.a)b.classList.add("correct")});if(v===current.a){score++;btn.classList.add("correct");$("feedback").textContent="🎉 정답!"}else{btn.classList.add("wrong");$("feedback").innerHTML=`정답은 <b>${current.a}</b>`}setTimeout(()=>{qi++;renderQuiz()},600)}
+function listen(){if(current){if(current.s)speak(current.s);else speak(current.ref[0])}}
+function finish(){$("qbar").style.width="100%";$("question").innerHTML=`<div class="big">${score} / ${quiz.length}</div><div>학습 완료!</div>`;$("choices").innerHTML=`<button class="primary" onclick="newQuiz()">다시 풀기</button>`;$("feedback").innerHTML="틀린 문제는 복습 메뉴의 취약 글자에 반영됩니다."}
+function weakQuiz(){let all=poolData(),w=all.filter(x=>(stats[(SPECIAL.includes(x)?"s_":mode+"_")+x[0]]??50)<70);if(!w.length){alert("현재 취약 글자가 없어요!");return}newQuiz(w)}
+function review(){
+let all=H.concat(K),w=all.map((x,i)=>({x,mode:i<46?"h":"k",s:stats[(i<46?"h_":"k_")+x[0]]??50})).filter(z=>z.s<70).sort((a,b)=>a.s-b.s).slice(0,10);
+$("due").innerHTML=`오늘 <b>${today}문제</b>를 풀었어요. 정답률이 낮은 글자는 반복 출제됩니다. <br>목표는 하루 5~10분이에요.`;
+$("weak").innerHTML=w.length?w.map(z=>`<div class="stat"><span>${z.x[0]} · ${z.x[2]}</span><b>${z.s}%</b></div>`).join(""):"<div class='center'>취약 글자가 없어요 🎉</div>";
+$("hs").textContent=H.filter(x=>prog["h_"+x[0]]).length+" / 46";$("ks").textContent=K.filter(x=>prog["k_"+x[0]]).length+" / 46";$("ts").textContent=today+"문제";
+}
+$("today").textContent="오늘 "+today+"문제";render();
+</script><script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
+}
+</script>
+</body></html>
